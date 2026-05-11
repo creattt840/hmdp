@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * <p>
  *  服务实现类
@@ -42,15 +44,41 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
             Shop shop= JSONUtil.toBean(shopJson,Shop.class);
             return Result.ok(shop);
         }
+        //判断是否是空值
+        if (shopJson!=null) {
+            //返回一个错误信息
+            return Result.fail("店铺信息不存在！");
+        }
         //4.不存在，根据id查询数据库
         Shop shop = getById(id);
         //5.不存在，返回错误
         if (shop==null) {
+            //将空值写入redis
+            stringRedisTemplate.opsForValue().set(key,"",RedisConstants.CACHE_NULL_TTL,TimeUnit.MINUTES);
+            //返回错误信息
             return Result.fail("店铺不存在!");
         }
         //6.存在写入redis
-        stringRedisTemplate.opsForValue().set(key,JSONUtil.toJsonStr(shop));
+        stringRedisTemplate.opsForValue().set(key,JSONUtil.toJsonStr(shop),RedisConstants.CACHE_SHOP_TTL, TimeUnit.MINUTES);
         //7.返回
         return Result.ok(shop);
+    }
+
+    /**
+     * 更新商铺信息
+     * @param shop
+     * @return
+     */
+    @Override
+    public Result update(Shop shop) {
+        Long id= shop.getId();
+        if (id==null) {
+            return Result.fail("商铺id不能为空");
+        }
+        //1.更新数据库
+        updateById(shop);
+        //2.删除缓存
+        stringRedisTemplate.delete(RedisConstants.CACHE_SHOP_KEY + id);
+        return Result.ok();
     }
 }
