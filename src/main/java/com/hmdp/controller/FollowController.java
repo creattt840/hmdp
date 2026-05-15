@@ -3,6 +3,7 @@ package com.hmdp.controller;
 
 import com.hmdp.dto.Result;
 import com.hmdp.service.IFollowService;
+import io.lettuce.core.ConnectionEvents;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,5 +30,10 @@ public class FollowController {
     @GetMapping("/or/not/{id}")
     public Result isfollow(@PathVariable("id") Long followUserId){
         return iFollowService.isFollow(followUserId);
+    }
+
+    @GetMapping("/common/{id}")
+    public Result followCommons(@PathVariable("id") Long id){
+        return iFollowService.followCommons(id);
     }
 }
